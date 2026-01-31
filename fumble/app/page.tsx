@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from "react";
 import LoginView from "./components/LoginView";
+import SwipeableCard from "./components/SwipeableCard";
+import ProfileCard from "./components/ProfileCard";
+import PromptCard from "./components/PromptCard";
+import VitalsCard from "./components/VitalsCard";
+import PhotoCard from "./components/PhotoCard";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
