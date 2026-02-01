@@ -3,6 +3,7 @@
 import { MessageCircle } from "lucide-react";
 import { UserProfile } from "../types/user";
 import { getAllUsersExcept } from "../lib/users";
+import { getChatLastMessageTime } from "../lib/chatStorage";
 
 interface ChatViewProps {
   onSelectChat?: (chat: { id: number; name: string }) => void;
@@ -12,12 +13,43 @@ interface ChatViewProps {
 export default function ChatView({ onSelectChat, currentUser }: ChatViewProps) {
   // Get all users except the current user for testing
   const allOtherUsers = getAllUsersExcept(currentUser.id);
-  const chats = allOtherUsers.map(user => ({
-    id: user.id,
-    name: user.name,
-    message: "Start a conversation!",
-    time: "Now"
-  }));
+
+  // Map users to chats with last message time
+  const chatsWithTime = allOtherUsers.map(user => {
+    const lastMessageTime = getChatLastMessageTime(user.id);
+    return {
+      id: user.id,
+      name: user.name,
+      message: lastMessageTime > 0 ? "Tap to view conversation" : "Start a conversation!",
+      time: lastMessageTime > 0 ? formatTime(lastMessageTime) : "New",
+      lastMessageTime
+    };
+  });
+
+  // Sort by last message time (most recent first), then alphabetically
+  const chats = chatsWithTime.sort((a, b) => {
+    if (a.lastMessageTime === 0 && b.lastMessageTime === 0) {
+      // Both have no messages, sort alphabetically
+      return a.name.localeCompare(b.name);
+    }
+    if (a.lastMessageTime === 0) return 1; // a has no messages, put it after b
+    if (b.lastMessageTime === 0) return -1; // b has no messages, put it after a
+    // Both have messages, sort by most recent first
+    return b.lastMessageTime - a.lastMessageTime;
+  });
+
+  function formatTime(timestamp: number): string {
+    const now = Date.now();
+    const diff = now - timestamp;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return "Now";
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    return `${days}d`;
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#f4f4f5] pb-24">

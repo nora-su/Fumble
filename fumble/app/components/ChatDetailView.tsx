@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, MoreHorizontal, BadgeCheck, SendHorizontal } from "lucide-react";
 import { Socket } from "socket.io-client";
+import { updateChatLastMessage } from "../lib/chatStorage";
 
 interface Message {
   id: number;
@@ -19,14 +20,7 @@ interface ChatDetailViewProps {
 }
 
 export default function ChatDetailView({ chat, onBack, currentUserId, socket }: ChatDetailViewProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: "Hey! What do you usually do to unwind after work?", isMe: true, timestamp: Date.now() - 600000 },
-    { id: 2, text: "Mostly music or a walk. You?", isMe: false, timestamp: Date.now() - 500000 },
-    { id: 3, text: "Same! Walks + podcasts are my go-to.", isMe: true, timestamp: Date.now() - 400000 },
-    { id: 4, text: "Nice. What kind of podcasts?", isMe: false, timestamp: Date.now() - 300000 },
-    { id: 5, text: "A mix—true crime and random life stuff. You?", isMe: true, timestamp: Date.now() - 200000 },
-    { id: 6, text: "Love that. I'm more into comedy and stories lately.", isMe: false, timestamp: Date.now() - 100000 },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,6 +41,8 @@ export default function ChatDetailView({ chat, onBack, currentUserId, socket }: 
         isMe: false,
         timestamp
       }]);
+      // Update last message time for this chat
+      updateChatLastMessage(chat.id);
     };
 
     socket.on("receive_message", handleReceiveMessage);
@@ -54,7 +50,7 @@ export default function ChatDetailView({ chat, onBack, currentUserId, socket }: 
     return () => {
       socket.off("receive_message", handleReceiveMessage);
     };
-  }, [socket]);
+  }, [socket, chat.id]);
 
   const handleSend = () => {
     if (inputText.trim() === "") return;
@@ -72,6 +68,9 @@ export default function ChatDetailView({ chat, onBack, currentUserId, socket }: 
       to: chat.id.toString(),
       message: inputText
     });
+
+    // Update last message time for this chat
+    updateChatLastMessage(chat.id);
 
     setInputText("");
   };
